@@ -1,13 +1,18 @@
 import { ComponentType } from 'react';
 import { motion } from 'motion/react';
 import { SERVICES } from '../data';
-import { Sparkles, Package, Paintbrush, Laptop, ArrowRight } from 'lucide-react';
+import { Sparkles, Package, Paintbrush, Laptop, Mail, ArrowRight, TrendingUp, Film, Image, FileText } from 'lucide-react';
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   Sparkles: Sparkles,
   Package: Package,
   Paintbrush: Paintbrush,
   Laptop: Laptop,
+  Mail: Mail,
+  TrendingUp: TrendingUp,
+  Film: Film,
+  Image: Image,
+  FileText: FileText,
 };
 
 const colorThemes = {

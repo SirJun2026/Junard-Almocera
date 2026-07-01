@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { TOOLS } from '../data';
 import { Palette, Layers, Award, Terminal, Heart } from 'lucide-react';
+import profileImg from '../assets/images/regenerated_image_1782809701530.jpg';
 
 export default function About() {
   // Category-specific configurations
@@ -52,9 +53,10 @@ export default function About() {
               {/* Profile Image placeholder */}
               <div className="aspect-square w-full overflow-hidden border-3 border-brand-charcoal bg-brand-lavender relative">
                 <img
-                  src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?q=80&w=800&auto=format&fit=crop"
+                  src={profileImg}
                   alt="Junard Almocera"
-                  className="w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500"
+                  style={{ height: '350px' }}
+                  className="w-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute bottom-2 left-2 bg-brand-charcoal text-brand-cream text-[10px] font-mono px-2 py-0.5 uppercase tracking-wide">
@@ -95,7 +97,7 @@ export default function About() {
                 Hello, I'm Junard! I design visual systems that help brave brands find their rhythm and make serious waves.
               </p>
               <p>
-                I graduated in Visual Communications and have spent the last 7 years collaborating with food trucks, organic skincare labs, cosmic publishers, and design agencies. I believe graphic design shouldn't just exist to be stared at; it should invite touch, provoke smiles, and solve concrete problems.
+                I graduated in Creative Design in Visual Art and have spent the last 3 years collaborating with Local Food Company, organic skincare labs, cosmic publishers, and design agencies. I believe graphic design shouldn't just exist to be stared at; it should invite touch, provoke smiles, and solve concrete problems.
               </p>
               <p>
                 Whether I am hand-drawing retro characters for street-food containers or designing custom typographic hierarchies for craft beverages, my core focus remains the same: combining raw, beautiful illustration with structured, logical brand architecture.

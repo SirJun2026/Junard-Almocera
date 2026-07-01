@@ -1,6 +1,8 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Instagram, Linkedin, Send, CheckCircle, Smile } from 'lucide-react';
+import { initAuth, googleSignIn, uploadToGoogleDrive, logout } from '../lib/firebase';
+import { User } from 'firebase/auth';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -13,6 +15,24 @@ export default function Contact() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [googleUser, setGoogleUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [driveError, setDriveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user, token) => {
+        setGoogleUser(user);
+        setAccessToken(token);
+      },
+      () => {
+        setGoogleUser(null);
+        setAccessToken(null);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   const projectTypes = ['Branding', 'Packaging', 'Illustration', 'UI/UX Design', 'Other'];
 
@@ -30,23 +50,83 @@ export default function Contact() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
-    // Simulate real database sending
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setDriveError(null);
+
+    try {
+      let currentToken = accessToken;
+
+      // If not logged in, sign in first
+      if (!currentToken) {
+        const result = await googleSignIn();
+        if (result) {
+          setGoogleUser(result.user);
+          setAccessToken(result.accessToken);
+          currentToken = result.accessToken;
+        } else {
+          throw new Error('Google Sign-in was cancelled or failed.');
+        }
+      }
+
+      // Generate text file content
+      const timestamp = new Date().toLocaleString();
+      const fileContent = `PORTFOLIO CONTACT INQUIRY\n` +
+        `==========================\n` +
+        `Submitted At: ${timestamp}\n\n` +
+        `--- CLIENT DETAILS ---\n` +
+        `Name: ${formData.name}\n` +
+        `Email: ${formData.email}\n` +
+        `Interested In: ${formData.projectType}\n\n` +
+        `--- BRIEF MESSAGE ---\n` +
+        `${formData.message}\n\n` +
+        `==========================\n` +
+        `Sent via Junard's Portfolio Website.`;
+
+      const safeName = formData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `inquiry_${safeName}_${Date.now()}.txt`;
+
+      // Upload to Google Drive
+      await uploadToGoogleDrive(currentToken, filename, fileContent);
+
+      // Format the email subject and body
+      const subject = encodeURIComponent(`Project Inquiry: ${formData.projectType} - from ${formData.name}`);
+      const emailBody = encodeURIComponent(
+        `Hello Junard,\n\n` +
+        `You have received a new project inquiry from your portfolio website.\n\n` +
+        `--- CLIENT DETAILS ---\n` +
+        `Name: ${formData.name}\n` +
+        `Email: ${formData.email}\n` +
+        `Interested in: ${formData.projectType}\n\n` +
+        `--- MESSAGE ---\n` +
+        `${formData.message}\n\n` +
+        `Best regards,\n` +
+        `${formData.name}`
+      );
+
+      // Construct the mailto link
+      const mailtoUrl = `mailto:junard.almocera.gf2020@gmail.com?subject=${subject}&body=${emailBody}`;
+
+      // Open the client's email application
+      window.location.href = mailtoUrl;
+
+      // Complete on UI
       setIsSubmitted(true);
-      // Reset form
       setFormData({
         name: '',
         email: '',
         projectType: 'Branding',
         message: '',
       });
-    }, 1500);
+    } catch (error: any) {
+      console.error('Submission failed:', error);
+      setDriveError(error.message || 'Failed to submit form to Google Drive.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -96,7 +176,9 @@ export default function Contact() {
               {/* Email */}
               <a
                 id="contact-email-link"
-                href="mailto:junard.almocera.gf2020@gmail.com"
+                href="https://mail.google.com/mail/u/0/#inbox?compose=CllgCJNsLqMQGdDnxvzpvSTRwPJDLqhBTvxzbHHqKkRXDtTjTSGRVSwmGLPPFpHgfSVnjQwKwwg"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group flex items-center gap-4 bg-white border-2 border-brand-charcoal p-4 rounded-xl hover:bg-brand-yellow/10 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all"
               >
                 <div className="w-10 h-10 rounded-lg bg-brand-coral/15 border border-brand-coral flex items-center justify-center text-brand-coral group-hover:scale-110 transition-transform">
@@ -111,7 +193,7 @@ export default function Contact() {
               {/* Instagram */}
               <a
                 id="contact-instagram-link"
-                href="https://instagram.com"
+                href="https://www.instagram.com/junardalmocera/"
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-center gap-4 bg-white border-2 border-brand-charcoal p-4 rounded-xl hover:bg-brand-yellow/10 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all"
@@ -121,14 +203,14 @@ export default function Contact() {
                 </div>
                 <div>
                   <span className="font-mono text-[9px] uppercase font-bold text-brand-charcoal/50 block">Creative Log</span>
-                  <span className="font-sans text-sm font-bold text-brand-charcoal">@junard.designs</span>
+                  <span className="font-sans text-sm font-bold text-brand-charcoal">@junard.almocera</span>
                 </div>
               </a>
 
               {/* LinkedIn */}
               <a
                 id="contact-linkedin-link"
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/in/junard-almocera-19271727a/"
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-center gap-4 bg-white border-2 border-brand-charcoal p-4 rounded-xl hover:bg-brand-yellow/10 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all"
@@ -266,6 +348,44 @@ export default function Contact() {
                     />
                     {errors.message && (
                       <span className="font-mono text-xs text-brand-coral font-bold block">{errors.message}</span>
+                    )}
+                  </div>
+
+                  {/* Google Drive Status Indicator */}
+                  <div className="flex flex-col gap-2 pt-2 border-t border-brand-charcoal/10">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <div className="flex items-center gap-1.5">
+                        {googleUser ? (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full bg-brand-teal animate-pulse" />
+                            <span className="text-brand-charcoal/70">
+                              Connected to Google Drive ({googleUser.email})
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-brand-charcoal/70">
+                              Save brief to Google Drive (sign-in on submit)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {googleUser && (
+                        <button
+                          type="button"
+                          onClick={logout}
+                          className="text-brand-coral hover:underline cursor-pointer font-bold"
+                        >
+                          Disconnect
+                        </button>
+                      )}
+                    </div>
+
+                    {driveError && (
+                      <div className="bg-brand-coral/10 border-2 border-brand-coral p-3 rounded-xl text-xs font-mono text-brand-coral font-bold leading-relaxed">
+                        ⚠️ Error saving to Drive: {driveError}
+                      </div>
                     )}
                   </div>
 
